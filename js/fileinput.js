@@ -957,7 +957,7 @@
 
             self.$preview.find('.kv-file-remove').each(function () {
                 var $el = $(this), vUrl = $el.data('url') || self.deleteUrl, vKey = $el.data('key');
-                if (true) // (isEmpty(vUrl) || vKey === undefined) {
+                if (true) { // (isEmpty(vUrl) || vKey === undefined) {
                     //If not vUrl defined, do not call the ajax but just raise the events filepredelete and filedeleted
                     var $frame = $el.closest('.file-preview-frame'), cache = previewCache.data[self.id],
                         settings, params, index = $frame.data('fileindex'), config, extraData;
