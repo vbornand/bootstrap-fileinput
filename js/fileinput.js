@@ -952,6 +952,9 @@
 
             self.$preview.find('.kv-file-remove').each(function () {
                 var $el = $(this), vUrl = $el.data('url') || self.deleteUrl, vKey = $el.data('key');
+                if (isEmpty(vUrl) || vKey === undefined) {
+                    return;
+                }
                 var $frame = $el.closest('.file-preview-frame'), cache = previewCache.data[self.id],
                    settings, params, index = $frame.data('fileindex'), config, extraData;
                 index = parseInt(index.replace('init_', ''));
