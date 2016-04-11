@@ -961,13 +961,13 @@
                     extraData = extraData();
                 }
                 self.ajaxAborted = false;
-                self._raise('filepredelete', [vKey, jqXHR, extraData]);
+                self._raise('filepredelete', [vKey, null, extraData]);
                 if (!self.ajaxAborted) {
                     var n, cap;
                     previewCache.unset(self.id, index);
                     n = previewCache.count(self.id);
                     cap = n > 0 ? self._getMsgSelected(n) : '';
-                    self._raise('filedeleted', [vKey, jqXHR, extraData]);
+                    self._raise('filedeleted', [vKey, null, extraData]);
                     self._setCaption(cap);
                     $frame.removeClass('file-uploading').addClass('file-deleted');
                     $frame.fadeOut('slow', function () {
