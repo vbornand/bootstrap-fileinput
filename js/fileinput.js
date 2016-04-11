@@ -958,49 +958,25 @@
             self.$preview.find('.kv-file-remove').each(function () {
                 var $el = $(this), vUrl = $el.data('url') || self.deleteUrl, vKey = $el.data('key');
                 if (isEmpty(vUrl) || vKey === undefined) {
-                    return;
-                }
-                var $frame = $el.closest('.file-preview-frame'), cache = previewCache.data[self.id],
-                    settings, params, index = $frame.data('fileindex'), config, extraData;
-                index = parseInt(index.replace('init_', ''));
-                config = isEmpty(cache.config) && isEmpty(cache.config[index]) ? null : cache.config[index];
-                extraData = isEmpty(config) || isEmpty(config.extra) ? deleteExtraData : config.extra;
-                if (typeof extraData === "function") {
-                    extraData = extraData();
-                }
-                params = {id: $el.attr('id'), key: vKey, extra: extraData};
-                settings = $.extend(true, {}, {
-                    url: vUrl,
-                    type: 'POST',
-                    dataType: 'json',
-                    data: $.extend(true, {}, {key: vKey}, extraData),
-                    beforeSend: function (jqXHR) {
-                        self.ajaxAborted = false;
-                        self._raise('filepredelete', [vKey, jqXHR, extraData]);
-                        if (self.ajaxAborted) {
-                            jqXHR.abort();
-                        } else {
-                            addCss($frame, 'file-uploading');
-                            addCss($el, 'disabled');
-                        }
-                    },
-                    success: function (data, textStatus, jqXHR) {
+                    //If not vUrl defined, do not call the ajax but just raise the events filepredelete and filedeleted
+                    var $frame = $el.closest('.file-preview-frame'), cache = previewCache.data[self.id],
+                        settings, params, index = $frame.data('fileindex'), config, extraData;
+                    index = parseInt(index.replace('init_', ''));
+                    config = isEmpty(cache.config) && isEmpty(cache.config[index]) ? null : cache.config[index];
+                    extraData = isEmpty(config) || isEmpty(config.extra) ? deleteExtraData : config.extra;
+                    if (typeof extraData === "function") {
+                        extraData = extraData();
+                    }
+                    params = { id: $el.attr('id'), key: vKey, extra: extraData };
+                    self.ajaxAborted = false;
+                    self._raise('filepredelete', [vKey, null, extraData]);
+                    if (!self.ajaxAborted) {
                         var n, cap;
-                        if (isEmpty(data) || isEmpty(data.error)) {
-                            previewCache.unset(self.id, index);
-                            n = previewCache.count(self.id);
-                            cap = n > 0 ? self._getMsgSelected(n) : '';
-                            self._raise('filedeleted', [vKey, jqXHR, extraData]);
-                            self._setCaption(cap);
-                        } else {
-                            params.jqXHR = jqXHR;
-                            params.response = data;
-                            self._showError(data.error, params, 'filedeleteerror');
-                            $frame.removeClass('file-uploading');
-                            $el.removeClass('disabled');
-                            resetProgress();
-                            return;
-                        }
+                        previewCache.unset(self.id, index);
+                        n = previewCache.count(self.id);
+                        cap = n > 0 ? self._getMsgSelected(n) : '';
+                        self._raise('filedeleted', [vKey, null, extraData]);
+                        self._setCaption(cap);
                         $frame.removeClass('file-uploading').addClass('file-deleted');
                         $frame.fadeOut('slow', function () {
                             self._clearObjects($frame);
@@ -1011,22 +987,78 @@
                                 self.reset();
                             }
                         });
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        var errMsg = self._parseError(jqXHR, errorThrown);
-                        params.jqXHR = jqXHR;
-                        params.response = {};
-                        self._showError(errMsg, params, 'filedeleteerror');
-                        $frame.removeClass('file-uploading');
-                        resetProgress();
                     }
-                }, self.ajaxDeleteSettings);
-                handler($el, 'click', function () {
-                    if (!self._validateMinCount()) {
-                        return false;
+                }
+                else
+                {
+                    var $frame = $el.closest('.file-preview-frame'), cache = previewCache.data[self.id],
+                        settings, params, index = $frame.data('fileindex'), config, extraData;
+                    index = parseInt(index.replace('init_', ''));
+                    config = isEmpty(cache.config) && isEmpty(cache.config[index]) ? null : cache.config[index];
+                    extraData = isEmpty(config) || isEmpty(config.extra) ? deleteExtraData : config.extra;
+                    if (typeof extraData === "function") {
+                        extraData = extraData();
                     }
-                    $.ajax(settings);
-                });
+                    params = {id: $el.attr('id'), key: vKey, extra: extraData};
+                    settings = $.extend(true, {}, {
+                        url: vUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: $.extend(true, {}, {key: vKey}, extraData),
+                        beforeSend: function (jqXHR) {
+                            self.ajaxAborted = false;
+                            self._raise('filepredelete', [vKey, jqXHR, extraData]);
+                            if (self.ajaxAborted) {
+                                jqXHR.abort();
+                            } else {
+                                addCss($frame, 'file-uploading');
+                                addCss($el, 'disabled');
+                            }
+                        },
+                        success: function (data, textStatus, jqXHR) {
+                            var n, cap;
+                            if (isEmpty(data) || isEmpty(data.error)) {
+                                previewCache.unset(self.id, index);
+                                n = previewCache.count(self.id);
+                                cap = n > 0 ? self._getMsgSelected(n) : '';
+                                self._raise('filedeleted', [vKey, jqXHR, extraData]);
+                                self._setCaption(cap);
+                            } else {
+                                params.jqXHR = jqXHR;
+                                params.response = data;
+                                self._showError(data.error, params, 'filedeleteerror');
+                                $frame.removeClass('file-uploading');
+                                $el.removeClass('disabled');
+                                resetProgress();
+                                return;
+                            }
+                            $frame.removeClass('file-uploading').addClass('file-deleted');
+                            $frame.fadeOut('slow', function () {
+                                self._clearObjects($frame);
+                                $frame.remove();
+                                resetProgress();
+                                if (!n && self.getFileStack().length === 0) {
+                                    self._setCaption('');
+                                    self.reset();
+                                }
+                            });
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            var errMsg = self._parseError(jqXHR, errorThrown);
+                            params.jqXHR = jqXHR;
+                            params.response = {};
+                            self._showError(errMsg, params, 'filedeleteerror');
+                            $frame.removeClass('file-uploading');
+                            resetProgress();
+                        }
+                    }, self.ajaxDeleteSettings);
+                    handler($el, 'click', function () {
+                        if (!self._validateMinCount()) {
+                            return false;
+                        }
+                        $.ajax(settings);
+                    });
+                }
             });
         },
         _clearObjects: function ($el) {
